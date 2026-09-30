@@ -11,7 +11,7 @@
 
 > **Internship Project** | National Remote Sensing Centre (NRSC), ISRO Hyderabad  
 > **Period:** 10th June 2026 – 25th July 2026  
-> **Supervisor:** Mr. Naresh Nagamalle, Sci/Eng.-SF, BCGG, BG&WSA, NRSC, ISRO
+> **Supervisor:** Mr. Naresh Nagamalle, Sci/Eng.-SF, BCGG, BG&WSA, NRSC, ISRO 
 
 </div>
 
