@@ -48,7 +48,7 @@ Three cutting-edge architectures were implemented and benchmarked:
 | **SegFormer** (mit-b0) | Hierarchical Transformer | **0.8520** | **0.9201** |
 | **DINOv2** (ViT-Small) | Vision Foundation Model | 0.8296 | 0.9069 |
 
-> ✅ **SegFormer achieved the best overall performance** — making this the first known application of transformer-based segmentation on LISS-IV solar farm data.
+> **SegFormer achieved the highest validation scores in this experiment.** The scores are from the reported 80/20 split; results may differ across scenes and data splits.
 
 ---
 
@@ -158,8 +158,8 @@ Sensor           : LISS-IV
 Spatial Resolution: 5.8 metres
 Bands            : Green, Red, Near-Infrared (3 bands)
 Image Format     : GeoTIFF (128 × 128 pixels per chip)
-Total Image Chips: 2,641
-Total Mask Chips : 2,641
+Total Image Chips: 2,641 (dataset used for training; data not included here)
+Total Mask Chips : 2,641 (dataset used for training; data not included here)
 Solar Chips      : 2,026  (≥1 solar pixel)
 Non-Solar Chips  :   615  (all background)
 Train / Val Split: 80% / 20%  (seed = 42)
@@ -221,7 +221,7 @@ Total Loss = Dice Loss + Binary Cross-Entropy (BCE) Loss + Focal Loss
 
 ## 🖼️ Visual Inference
 
-Inference was run on **5 unseen LISS-IV satellite scenes**. Yellow boundary polygons show predicted solar farm extents overlaid on False Colour Composite (FCC) imagery.
+Inference was run on **5 held-out LISS-IV satellite scenes**. Yellow boundary polygons show predicted solar farm extents overlaid on False Colour Composite (FCC) imagery. The scenes, training chips, and trained checkpoint weights are not included in this repository.
 
 > 🔴 Red = Dense Vegetation | 🔵 Dark Blue = Water Bodies | ⬜ Grey/White = Bare Land / Urban
 
@@ -254,10 +254,12 @@ Inference was run on **5 unseen LISS-IV satellite scenes**. Yellow boundary poly
 
 ## 🛠️ Installation
 
+This repository contains model and inference scripts, configuration files, logs, and selected result images. It does not contain the training dataset or trained `.pth` checkpoints, so inference requires a checkpoint you have trained or obtained separately. The GIS input scenes also require access to LISS-IV data.
+
 ### Step 1 — Clone the Repository
 ```bash
-git clone https://github.com/Anandraj239/solar-farm-segmentation-lissiv.git
-cd solar-farm-segmentation-lissiv
+git clone https://github.com/Anandraj239/Solar-Farms-Segmentation-LISS-IV.git
+cd Solar-Farms-Segmentation-LISS-IV
 ```
 
 ### Step 2 — Create Conda Environment
@@ -287,9 +289,10 @@ huggingface-hub==1.24.0 albumentations==2.0.8 opencv-python==5.0.0.93
 
 ### Step 6 — Install Remaining Dependencies
 ```bash
-pip install segmentation-models-pytorch tqdm matplotlib seaborn pandas \
-shapely fiona tqdm pyyaml rich
+pip install -r requirements.txt
 ```
+
+The dependency pins describe the environment used for this project. GIS packages are installed through conda above to keep their native libraries together; if pip reports GIS packages already satisfied, continue. A CUDA-enabled PyTorch install is optional for CPU inference; use the matching PyTorch build for your OS, Python, and CUDA runtime.
 
 ### Step 7 — Verify GPU Setup
 ```python
@@ -303,50 +306,33 @@ print(torch.cuda.get_device_name(0))   # Should print your GPU name
 ## 📁 Project Structure
 
 ```
-solar-farm-segmentation-lissiv/
-│
-├── 📂 data/
-│   ├── 📂 images/              # LISS-IV TOA corrected image chips (128×128)
-│   ├── 📂 masks/               # Binary solar farm masks (128×128)
-│   └── 📂 raw_scenes/          # Full LISS-IV scenes (GeoTIFF)
-│
-├── 📂 notebooks/
-│   ├── 01_data_preprocessing.ipynb
-│   ├── 02_mask_generation.ipynb
-│   ├── 03_attention_unet_training.ipynb
-│   ├── 04_segformer_training.ipynb
-│   ├── 05_dinov2_training.ipynb
-│   └── 06_inference_visualization.ipynb
-│
-├── 📂 models/
-│   ├── attention_unet.py       # ResNet50 + SE Block + Attention Gates
-│   ├── segformer.py            # SegFormer mit-b0 fine-tuning
-│   └── dinov2.py               # DINOv2 ViT-Small fine-tuning
-│
-├── 📂 utils/
-│   ├── dataset.py              # PyTorch Dataset class for LISS-IV chips
-│   ├── losses.py               # Dice + BCE + Focal combined loss
-│   ├── metrics.py              # IoU, F1, Precision, Recall, Dice
-│   ├── preprocessing.py        # TOA correction, tiling, normalization
-│   └── visualize.py            # Mask overlay on FCC imagery
-│
-├── 📂 inference/
-│   ├── run_inference.py        # Inference on full LISS-IV scenes
-│   └── vectorize_masks.py      # Convert binary masks to GeoJSON polygons
-│
-├── 📂 results/
-│   ├── 📂 training_logs/       # Epoch-wise metrics for all 3 models
-│   ├── 📂 inference_outputs/   # Predicted masks + visualizations
-│   └── 📂 comparisons/         # Side-by-side model comparison images
-│
-├── 📂 assets/                  # Images used in README
-│
-├── environment.yml             # Full Conda environment export
-├── requirements.txt            # pip requirements
-├── train.py                    # Unified training script
-├── config.yaml                 # Training hyperparameters
+Solar-Farms-Segmentation-LISS-IV/
+├── Models/
+│   ├── DINOv2/                  # DINOv2 training code, config, and logs
+│   ├── DINOv2_Inference/        # DINOv2 inference code and sample outputs
+│   ├── Segformer/               # SegFormer training code, config, and logs
+│   ├── Segformer_inference/     # SegFormer inference code and sample outputs
+│   ├── U-Net_inference/         # U-Net inference artifacts
+│   └── ...                      # Additional experiments and outputs
+├── assets/                      # README figures and selected results
+├── requirements.txt             # Python dependencies
+├── .gitignore                   # Ignore rules for data, weights, and generated files
+├── LICENSE
 └── README.md
 ```
+
+Training chips, full source scenes, and trained model checkpoint weights are not tracked here. Some configs contain local backbone paths from the original training machine; update the `backbone` value to a valid Hugging Face model ID or local model directory before running inference.
+
+### Run inference with an available checkpoint
+
+The scripts expect an input directory of LISS-IV GeoTIFF scenes, an output directory, a model directory, and a checkpoint name without the `.pth` suffix. The model directory must also contain the matching config, normalization values, and optimal threshold files. For example:
+
+```bash
+python Models/Segformer_inference/inference_segformer.py <INPUT_DIR> <OUTPUT_DIR> Models/Segformer <CHECKPOINT_NAME> cpu
+python Models/DINOv2_Inference/DINOv2_inference.py <INPUT_DIR> <OUTPUT_DIR> Models/DINOv2 <CHECKPOINT_NAME> cpu
+```
+
+Replace `<CHECKPOINT_NAME>` with the stem of a compatible checkpoint file such as `best_model.pth`. Checkpoints are not provided in this repository. Use `gpu` instead of `cpu` for a CUDA-enabled PyTorch environment.
 
 ---
 
